@@ -190,8 +190,8 @@ export default function App() {
         <button
           type="button"
           onClick={() => handleSelectNav('live')}
-          title="Xlab-nvr"
-          aria-label="Xlab-nvr Home"
+          title="xlab-nvr"
+          aria-label="xlab-nvr Home"
           className="mb-5 p-1 rounded-lg hover:bg-zinc-900 transition-colors cursor-pointer"
         >
           <XlabLogo className="w-8 h-8" />

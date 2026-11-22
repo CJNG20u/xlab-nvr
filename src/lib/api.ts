@@ -7,6 +7,7 @@ import type {
   ClipsResponse,
   ContinuousSegment,
   DetectionClip,
+  ImportGo2RtcResult,
   NvrRuntimeStatusResponse,
   NvrSettings,
   PublicCameraConfig,
@@ -90,6 +91,13 @@ export function testCameraConnectionApi(
   return requestJson<TestConnectionResult>('/api/cameras/test', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export function importStreamsFromGo2Rtc(go2rtcUrl?: string): Promise<ImportGo2RtcResult> {
+  return requestJson<ImportGo2RtcResult>('/api/cameras/import-go2rtc', {
+    method: 'POST',
+    body: JSON.stringify(go2rtcUrl ? { go2rtcUrl } : {}),
   });
 }
 

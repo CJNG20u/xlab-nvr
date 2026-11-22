@@ -151,11 +151,11 @@ export function LiveView({
           </button>
         </div>
 
-        {/* Center: Minimalist Xlab-nvr Geometric SVG Logo */}
+        {/* Center: Minimalist xlab-nvr Geometric SVG Logo */}
         <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
           <XlabLogo className="w-7 h-7" />
           <span className="hidden lg:inline text-sm font-semibold tracking-tight text-zinc-200">
-            Xlab-nvr
+            xlab-nvr
           </span>
         </div>
 

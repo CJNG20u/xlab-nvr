@@ -13,7 +13,8 @@ services:
       - PORT=8080
       - TZ=America/New_York
       - DATA_DIR=/data
-      - RECORDINGS_DIR=/recordings
+      - RECORDINGS_DIR=/app/recordings
     volumes:
-      - /mnt/nas-nvr:/recordings
+      # Local storage (or replace ./recordings with a NAS mount like /mnt/nas-nvr)
+      - ./recordings:/app/recordings
       - ./data:/data

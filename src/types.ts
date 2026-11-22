@@ -127,3 +127,9 @@ export interface TestConnectionResult {
     error?: string;
   };
 }
+
+export interface ImportGo2RtcResult {
+  imported: number;
+  skipped: number;
+  cameras: PublicCameraConfig[];
+}

@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Xlab-nvr",
-  "short_name": "Xlab-nvr",
+  "name": "xlab-nvr",
+  "short_name": "xlab-nvr",
   "description": "Standalone self-hosted NVR with live camera streams, 24/7 continuous NAS recording, and ONVIF object detection.",
   "start_url": "/",
   "scope": "/",

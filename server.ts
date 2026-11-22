@@ -32,6 +32,7 @@ import {
   sanitizeCameraId,
   toPublicCamera,
   validateDateString,
+  validateGo2RtcUrl,
   validateOnvifHost,
   validateStreamName,
   writeCameras,
@@ -52,6 +53,81 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = Number(process.env.PORT) || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
+
+function formatStreamDisplayName(streamKey: string): string {
+  const cleaned = streamKey
+    .replace(/[_\-./]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return 'Camera';
+  return cleaned
+    .split(' ')
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ''))
+    .join(' ')
+    .slice(0, 80);
+}
+
+function safeDecodeUriComponent(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function extractOnvifFromProducers(producers: unknown): {
+  onvifHost: string;
+  onvifUser: string;
+  onvifPass: string;
+} {
+  if (!Array.isArray(producers)) {
+    return { onvifHost: '', onvifUser: '', onvifPass: '' };
+  }
+
+  for (const producer of producers) {
+    let rawUrl = '';
+    if (typeof producer === 'string') {
+      rawUrl = producer;
+    } else if (producer && typeof producer === 'object') {
+      const record = producer as Record<string, unknown>;
+      if (typeof record.url === 'string') {
+        rawUrl = record.url;
+      } else if (typeof record.source === 'string') {
+        rawUrl = record.source;
+      }
+    }
+    if (!rawUrl) continue;
+
+    // Support both direct rtsp:// URLs and ffmpeg:rtsp://... wrappers
+    const rtspMatch = rawUrl.match(/rtsps?:\/\/\S+/i);
+    if (!rtspMatch) continue;
+
+    let candidate = rtspMatch[0];
+    // Strip trailing go2rtc hash options (#transport=tcp, #backpressure, #video=copy, etc.)
+    const schemeEnd = candidate.indexOf('://') + 3;
+    const pathStart = candidate.indexOf('/', schemeEnd);
+    const hashIdx = pathStart !== -1 ? candidate.indexOf('#', pathStart) : candidate.indexOf('#', schemeEnd);
+    if (hashIdx !== -1) {
+      candidate = candidate.slice(0, hashIdx);
+    }
+
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol !== 'rtsp:' && parsed.protocol !== 'rtsps:') continue;
+      const host = validateOnvifHost(parsed.hostname || '');
+      if (!host) continue;
+      return {
+        onvifHost: host,
+        onvifUser: safeDecodeUriComponent(parsed.username || '').trim().slice(0, 128),
+        onvifPass: safeDecodeUriComponent(parsed.password || ''),
+      };
+    } catch {
+      // Ignore unparseable or disallowed producer URL and check next producer
+    }
+  }
+
+  return { onvifHost: '', onvifUser: '', onvifPass: '' };
+}
 
 async function startServer() {
   // Automatically migrate any legacy recordClips flags to detectObjects before booting workers
@@ -221,6 +297,141 @@ async function startServer() {
     } catch (err) {
       res.status(500).json({
         error: err instanceof Error ? err.message : 'Failed to switch cameras to Live Only',
+      });
+    }
+  });
+
+  // One-click import of streams from go2rtc /api/streams
+  app.post('/api/cameras/import-go2rtc', async (req: Request, res: Response) => {
+    try {
+      const body = (req.body || {}) as Record<string, unknown>;
+      const settings = readSettings();
+      const rawUrl =
+        typeof body.go2rtcUrl === 'string' && body.go2rtcUrl.trim()
+          ? body.go2rtcUrl.trim()
+          : settings.go2rtcUrl;
+      const baseUrl = validateGo2RtcUrl(rawUrl);
+      const streamsEndpoint = `${baseUrl}/api/streams`;
+
+      let upstreamRes: globalThis.Response;
+      try {
+        upstreamRes = await fetch(streamsEndpoint, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+          redirect: 'error',
+          signal: AbortSignal.timeout(8_000),
+        });
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : 'Connection failed';
+        res.status(502).json({
+          error: `Could not reach go2rtc at ${baseUrl}: ${reason}`,
+        });
+        return;
+      }
+
+      if (!upstreamRes.ok) {
+        res.status(502).json({
+          error: `go2rtc responded with HTTP ${upstreamRes.status} from ${streamsEndpoint}`,
+        });
+        return;
+      }
+
+      let payload: unknown;
+      try {
+        payload = await upstreamRes.json();
+      } catch {
+        res.status(502).json({
+          error: `go2rtc at ${streamsEndpoint} did not return valid JSON`,
+        });
+        return;
+      }
+
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        res.status(502).json({
+          error: 'Unexpected response format from go2rtc /api/streams',
+        });
+        return;
+      }
+
+      const existingCameras = readCameras();
+      const existingStreamNames = new Set(existingCameras.map((c) => c.go2rtcStreamName));
+      const existingIds = new Set(existingCameras.map((c) => c.id));
+      const entries = Object.entries(payload as Record<string, unknown>).slice(0, 256);
+
+      let imported = 0;
+      let skipped = 0;
+      const newlyAdded = [];
+
+      for (const [streamKey, streamValue] of entries) {
+        let validStreamName: string;
+        try {
+          validStreamName = validateStreamName(streamKey);
+        } catch {
+          skipped++;
+          continue;
+        }
+
+        if (existingStreamNames.has(validStreamName)) {
+          skipped++;
+          continue;
+        }
+
+        const streamObj =
+          streamValue && typeof streamValue === 'object'
+            ? (streamValue as Record<string, unknown>)
+            : {};
+        const { onvifHost, onvifUser, onvifPass } = extractOnvifFromProducers(
+          streamObj.producers
+        );
+
+        let baseId: string;
+        try {
+          baseId = sanitizeCameraId(validStreamName);
+        } catch {
+          baseId = sanitizeCameraId(`cam_${existingIds.size + 1}`);
+        }
+        let uniqueId = baseId;
+        let suffix = 2;
+        while (existingIds.has(uniqueId)) {
+          uniqueId = `${baseId.slice(0, 58)}_${suffix}`;
+          suffix++;
+        }
+
+        const camera = normalizeCameraInput({
+          id: uniqueId,
+          name: formatStreamDisplayName(validStreamName),
+          group: 'General',
+          go2rtcStreamName: validStreamName,
+          onvifHost,
+          onvifPort: 80,
+          onvifUser,
+          onvifPass,
+          recordContinuous: false,
+          detectObjects: false,
+        });
+
+        existingCameras.push(camera);
+        existingStreamNames.add(validStreamName);
+        existingIds.add(uniqueId);
+        newlyAdded.push(camera);
+        imported++;
+      }
+
+      if (imported > 0) {
+        writeCameras(existingCameras);
+        for (const cam of newlyAdded) {
+          applyCameraModes(cam);
+        }
+      }
+
+      res.json({
+        imported,
+        skipped,
+        cameras: existingCameras.map(toPublicCamera),
+      });
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Failed to import streams from go2rtc',
       });
     }
   });
@@ -526,7 +737,7 @@ async function startServer() {
   startRetentionScheduler();
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.info(`Xlab-nvr listening on http://0.0.0.0:${PORT}`);
+    console.info(`xlab-nvr listening on http://0.0.0.0:${PORT}`);
     console.info(`Data directory: ${DATA_DIR} | Recordings directory: ${RECORDINGS_DIR}`);
   });
 

@@ -23,6 +23,7 @@ import {
   createCamera,
   deleteCamera,
   fetchSettings,
+  importStreamsFromGo2Rtc,
   saveSettings,
   testCameraConnectionApi,
   updateCamera,
@@ -67,7 +68,15 @@ export function SettingsView({
   const [testingKey, setTestingKey] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, TestConnectionResult>>({});
   const [modalTestResult, setModalTestResult] = useState<TestConnectionResult | null>(null);
+  const [importingGo2Rtc, setImportingGo2Rtc] = useState(false);
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const { isInstallable, isInstalled, isIOS, installing, promptInstall } = usePWAInstall();
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
 
   useEffect(() => {
     fetchSettings()
@@ -206,6 +215,34 @@ export function SettingsView({
     }
   };
 
+  const handleImportFromGo2Rtc = async (fromModal = false) => {
+    setImportingGo2Rtc(true);
+    if (fromModal) {
+      setCameraError(null);
+    }
+    try {
+      const result = await importStreamsFromGo2Rtc(settings?.go2rtcUrl);
+      await onCamerasChanged();
+      const text =
+        result.imported === 0 && result.skipped === 0
+          ? 'No streams found in go2rtc.'
+          : `Imported ${result.imported} ${result.imported === 1 ? 'stream' : 'streams'} from go2rtc (${result.skipped} already existed)`;
+      setToast({ type: 'ok', text });
+      if (fromModal) {
+        setModalOpen(false);
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to import streams from go2rtc';
+      setToast({ type: 'err', text: message });
+      if (fromModal) {
+        setCameraError(message);
+      }
+    } finally {
+      setImportingGo2Rtc(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full min-h-0 bg-black">
       <header className="shrink-0 border-b border-zinc-900 bg-black pt-[env(safe-area-inset-top)]">
@@ -246,14 +283,29 @@ export function SettingsView({
                     No cameras configured in{' '}
                     <span className="font-mono text-zinc-300">/data/cameras.json</span> yet.
                   </p>
-                  <button
-                    type="button"
-                    onClick={openAddModal}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-[#1e293b] hover:bg-[#3b5998] border border-[#3b5998]/50 text-zinc-100 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Camera
-                  </button>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={openAddModal}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-[#1e293b] hover:bg-[#3b5998] border border-[#3b5998]/50 text-zinc-100 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Camera
+                    </button>
+                    <button
+                      type="button"
+                      disabled={importingGo2Rtc}
+                      onClick={() => void handleImportFromGo2Rtc(false)}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 disabled:opacity-50 text-zinc-200 transition-colors cursor-pointer"
+                    >
+                      {importingGo2Rtc ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4 text-[#7c9cf5]" />
+                      )}
+                      Import from go2rtc
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="divide-y divide-zinc-800">
@@ -352,18 +404,33 @@ export function SettingsView({
                 className="rounded-xl bg-[#121214] border border-zinc-800 p-5 space-y-5"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="block text-xs font-medium text-zinc-300 mb-1.5">
                       go2rtc HTTP URL
                     </label>
-                    <input
-                      type="url"
-                      required
-                      value={settings.go2rtcUrl}
-                      onChange={(e) => setSettings({ ...settings, go2rtcUrl: e.target.value })}
-                      placeholder="http://localhost:1984"
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4f6bed]"
-                    />
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="url"
+                        required
+                        value={settings.go2rtcUrl}
+                        onChange={(e) => setSettings({ ...settings, go2rtcUrl: e.target.value })}
+                        placeholder="http://localhost:1984"
+                        className="flex-1 min-w-0 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm font-mono text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#4f6bed]"
+                      />
+                      <button
+                        type="button"
+                        disabled={importingGo2Rtc || !settings.go2rtcUrl.trim()}
+                        onClick={() => void handleImportFromGo2Rtc(false)}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium bg-[#1e293b] hover:bg-[#3b5998] border border-[#3b5998]/50 disabled:opacity-50 text-zinc-100 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                      >
+                        {importingGo2Rtc ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
+                        Import from go2rtc
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -492,12 +559,12 @@ export function SettingsView({
             )}
           </section>
 
-          {/* About Xlab-nvr Section */}
+          {/* About xlab-nvr Section */}
           <section className="rounded-xl bg-[#121214] border border-zinc-800 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5">
               <XlabLogo className="w-10 h-10 shrink-0" />
               <div>
-                <h2 className="text-sm font-semibold text-zinc-100">Xlab-nvr</h2>
+                <h2 className="text-sm font-semibold text-zinc-100">xlab-nvr</h2>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Self-hosted single-container NVR · Local JSON config, SQLite index, FFmpeg
                   stream-copy recording, ONVIF hardware AI, and go2rtc WebSocket MSE streaming.
@@ -507,7 +574,7 @@ export function SettingsView({
             <div className="text-xs font-mono text-zinc-500 shrink-0 space-y-0.5 sm:text-right">
               <p>Config: /data/cameras.json</p>
               <p>Index: /data/nvr.db</p>
-              <p>Storage: /recordings</p>
+              <p>Storage: /app/recordings</p>
             </div>
           </section>
 
@@ -529,12 +596,12 @@ export function SettingsView({
                 </div>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   {isInstalled
-                    ? 'Xlab-nvr is running full-screen in standalone app mode.'
+                    ? 'xlab-nvr is running full-screen in standalone app mode.'
                     : isInstallable
-                      ? 'Add Xlab-nvr to your home screen or desktop for full-screen live monitoring without browser bars.'
+                      ? 'Add xlab-nvr to your home screen or desktop for full-screen live monitoring without browser bars.'
                       : isIOS
                         ? 'Install on iPhone or iPad for full-screen standalone mode without Safari bars.'
-                        : 'Install from your browser address bar or menu to launch Xlab-nvr in standalone mode (requires HTTPS or localhost).'}
+                        : 'Install from your browser address bar or menu to launch xlab-nvr in standalone mode (requires HTTPS or localhost).'}
                 </p>
               </div>
             </div>
@@ -552,7 +619,7 @@ export function SettingsView({
                   ) : (
                     <Download className="w-3.5 h-3.5" />
                   )}
-                  Install Xlab-nvr
+                  Install xlab-nvr
                 </button>
               ) : isIOS ? (
                 <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
@@ -601,6 +668,32 @@ export function SettingsView({
             </div>
 
             <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+              {!editingId && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg bg-[#121214] border border-zinc-800 px-3.5 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-zinc-200">
+                      Have streams configured in go2rtc?
+                    </p>
+                    <p className="text-[11px] text-zinc-500 truncate">
+                      Auto-import stream names &amp; RTSP ONVIF credentials in Live Only mode.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={importingGo2Rtc}
+                    onClick={() => void handleImportFromGo2Rtc(true)}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1e293b] hover:bg-[#3b5998] border border-[#3b5998]/50 disabled:opacity-50 text-zinc-100 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    {importingGo2Rtc ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    Import from go2rtc
+                  </button>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-zinc-300 mb-1.5">
@@ -811,6 +904,33 @@ export function SettingsView({
               </div>
             </div>
           </form>
+        </div>
+      )}
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed right-4 bottom-20 md:bottom-5 z-[60] max-w-md flex items-start gap-2.5 rounded-xl px-4 py-3 text-xs border shadow-2xl ${
+            toast.type === 'ok'
+              ? 'bg-[#18181b] border-emerald-500/35 text-emerald-200'
+              : 'bg-[#18181b] border-red-500/35 text-red-200'
+          }`}
+        >
+          {toast.type === 'ok' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          )}
+          <span className="leading-relaxed flex-1">{toast.text}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            aria-label="Dismiss notification"
+            className="text-zinc-500 hover:text-zinc-200 cursor-pointer shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
     </div>

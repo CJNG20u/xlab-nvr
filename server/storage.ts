@@ -85,6 +85,14 @@ export function validateStreamName(raw: string): string {
   return trimmed;
 }
 
+function isBlockedMetadataHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (BLOCKED_METADATA_HOSTS.has(lower)) return true;
+  if (lower.startsWith('169.254.')) return true;
+  if (lower === 'fd00:ec2::254') return true;
+  return false;
+}
+
 export function validateGo2RtcUrl(raw: string): string {
   let parsed: URL;
   try {
@@ -95,7 +103,7 @@ export function validateGo2RtcUrl(raw: string): string {
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     throw new Error('go2rtcUrl must use http:// or https://');
   }
-  if (BLOCKED_METADATA_HOSTS.has(parsed.hostname.toLowerCase())) {
+  if (isBlockedMetadataHost(parsed.hostname)) {
     throw new Error('go2rtcUrl points to a disallowed metadata host');
   }
   return parsed.toString().replace(/\/+$/, '');
@@ -107,7 +115,7 @@ export function validateRtspHost(raw: string): string {
     throw new Error('go2rtcRtspHost must be a valid host or host:port');
   }
   const hostOnly = trimmed.replace(/:\d+$/, '').toLowerCase();
-  if (BLOCKED_METADATA_HOSTS.has(hostOnly)) {
+  if (isBlockedMetadataHost(hostOnly)) {
     throw new Error('go2rtcRtspHost points to a disallowed metadata host');
   }
   return trimmed;
@@ -119,7 +127,7 @@ export function validateOnvifHost(raw: string): string {
   if (!/^[a-zA-Z0-9._:\[\]-]{1,128}$/.test(trimmed)) {
     throw new Error('ONVIF host contains invalid characters');
   }
-  if (BLOCKED_METADATA_HOSTS.has(trimmed.toLowerCase())) {
+  if (isBlockedMetadataHost(trimmed)) {
     throw new Error('ONVIF host points to a disallowed metadata host');
   }
   return trimmed;

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const SHELL_CACHE = `xlab-nvr-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `xlab-nvr-assets-${CACHE_VERSION}`;
 const ACTIVE_CACHES = new Set([SHELL_CACHE, ASSET_CACHE]);
@@ -93,7 +93,7 @@ self.addEventListener('fetch', (event) => {
         .catch(async () => {
           const cached = await caches.match('/') || (await caches.match(request));
           if (cached) return cached;
-          return new Response('Xlab-nvr is offline. Waiting for NVR server connection.', {
+          return new Response('xlab-nvr is offline. Waiting for NVR server connection.', {
             status: 503,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
           });
