@@ -1,0 +1,6 @@
+{
+  "name": "Sentinel NVR",
+  "description": "Standalone self-hosted NVR with 24/7 continuous NAS recording, ONVIF hardware object detection clips, go2rtc low-latency live streaming, and unified timeline scrubbing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

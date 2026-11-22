@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="xlab-ring" x1="76" y1="76" x2="436" y2="436" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="xlab-housing" x1="32" y1="32" x2="480" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#151c28" />
+      <stop offset="100%" stop-color="#0c1118" />
+    </linearGradient>
+  </defs>
+
+  <!-- Solid pitch-black canvas -->
+  <rect width="512" height="512" fill="#000000" />
+
+  <!-- Dark geometric camera housing -->
+  <rect
+    x="40"
+    y="40"
+    width="432"
+    height="432"
+    rx="104"
+    fill="url(#xlab-housing)"
+    stroke="#334155"
+    stroke-opacity="0.7"
+    stroke-width="14"
+  />
+
+  <!-- Outer lens aperture ring -->
+  <circle
+    cx="256"
+    cy="256"
+    r="140"
+    stroke="#475569"
+    stroke-opacity="0.65"
+    stroke-width="14"
+  />
+
+  <!-- Segmented emerald-cyan aperture arcs -->
+  <path
+    d="M160.2 160.2 A135.5 135.5 0 0 1 319.1 135.7"
+    stroke="url(#xlab-ring)"
+    stroke-width="20"
+    stroke-linecap="round"
+  />
+  <path
+    d="M351.8 351.8 A135.5 135.5 0 0 1 192.9 376.3"
+    stroke="url(#xlab-ring)"
+    stroke-width="20"
+    stroke-linecap="round"
+  />
+
+  <!-- Angular X reticle strokes -->
+  <path
+    d="M174 174 L228 228 M338 338 L284 284 M338 174 L284 228 M174 338 L228 284"
+    stroke="#e2e8f0"
+    stroke-width="24"
+    stroke-linecap="square"
+  />
+
+  <!-- Inner lens aperture core -->
+  <circle
+    cx="256"
+    cy="256"
+    r="36"
+    fill="#0f172a"
+    stroke="url(#xlab-ring)"
+    stroke-width="18"
+  />
+
+  <!-- Subtle recording dot accent -->
+  <circle cx="390" cy="122" r="27" fill="#10b981" />
+</svg>

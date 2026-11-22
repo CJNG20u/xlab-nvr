@@ -1,0 +1,19 @@
+services:
+  xlab-nvr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xlab-nvr:latest
+    container_name: xlab-nvr
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - TZ=America/New_York
+      - DATA_DIR=/data
+      - RECORDINGS_DIR=/recordings
+    volumes:
+      - /mnt/nas-nvr:/recordings
+      - ./data:/data

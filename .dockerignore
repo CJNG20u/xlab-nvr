@@ -1,0 +1,12 @@
+node_modules
+package-lock.json
+bun.lock
+bun.lockb
+dist
+data
+recordings
+.git
+.env
+.env.local
+*.log
+.DS_Store
