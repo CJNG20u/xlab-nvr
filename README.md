@@ -19,48 +19,6 @@ A lightweight, self-hosted Network Video Recorder (NVR) and live camera wall bui
 
 ---
 
-## Architecture
-
-```mermaid
-flowchart LR
-    subgraph LAN["Local Network / Camera VLAN"]
-        CAM["IP Cameras<br/>(RTSP + ONVIF AI)"]
-    end
-
-    subgraph STREAM["Stream Relay"]
-        G2R["go2rtc<br/>HTTP :1984 · RTSP :8554<br/>WebSocket MSE / Snapshots"]
-    end
-
-    subgraph NVR["xlab-nvr Container (Port 8080)"]
-        UI["React + Vite PWA<br/>Live Wall · Review · Clips · Exports"]
-        API["Node.js + Express Server<br/>/api/* · /go2rtc/* Proxy · SSE"]
-        FF["FFmpeg Workers<br/>-c:v copy 5m Segments & Clips"]
-        ONV["ONVIF PullPoint Listeners<br/>Person · Vehicle · Pet · Motion"]
-        SQL[("SQLite Index<br/>/data/nvr.db")]
-        CFG[("JSON Config<br/>/data/settings.json<br/>/data/cameras.json")]
-    end
-
-    subgraph STORAGE["Persistent Storage"]
-        REC[("Local Disk / NAS Mount<br/>/app/recordings")]
-        DATA[("Config & DB Volume<br/>/data")]
-    end
-
-    CAM -- "RTSP" --> G2R
-    CAM -- "ONVIF PullPoint Events" --> ONV
-    G2R -- "WebSocket MSE / Frame JPEG" --> API
-    G2R -- "RTSP Restream" --> FF
-    API <--> UI
-    ONV -- "Trigger Event Clip" --> FF
-    FF -- "Write .mp4 & .jpg" --> REC
-    FF -- "Index Segments & Clips" --> SQL
-    API <--> CFG
-    API <--> SQL
-    SQL --- DATA
-    CFG --- DATA
-```
-
----
-
 ## Quick Start & Installation
 
 ### Prerequisites
