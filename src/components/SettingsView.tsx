@@ -337,8 +337,11 @@ export function SettingsView({
                                   <span className={cam.recordContinuous ? 'text-red-400' : ''}>
                                     24/7: {cam.recordContinuous ? 'On' : 'Off'}
                                   </span>
-                                  <span className={cam.detectObjects ? 'text-emerald-400' : ''}>
-                                    AI: {cam.detectObjects ? 'On' : 'Off'}
+                                  <span
+                                    title="OCR (On-Camera Recognition)"
+                                    className={cam.detectObjects ? 'text-emerald-400' : ''}
+                                  >
+                                    OCR: {cam.detectObjects ? 'On' : 'Off'}
                                   </span>
                                 </>
                               )}
@@ -567,7 +570,8 @@ export function SettingsView({
                 <h2 className="text-sm font-semibold text-zinc-100">xlab-nvr</h2>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Self-hosted single-container NVR · Local JSON config, SQLite index, FFmpeg
-                  stream-copy recording, ONVIF hardware AI, and go2rtc WebSocket MSE streaming.
+                  stream-copy recording, ONVIF OCR (On-Camera Recognition), and go2rtc WebSocket
+                  MSE streaming.
                 </p>
               </div>
             </div>
@@ -831,9 +835,12 @@ export function SettingsView({
 
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-zinc-200">Object Detection Clips</p>
+                    <p className="text-sm font-medium text-zinc-200">
+                      OCR (On-Camera Recognition)
+                    </p>
                     <p className="text-xs text-zinc-500">
-                      Listens to ONVIF hardware AI triggers and saves short event clips + snapshots.
+                      Listens to ONVIF on-camera recognition triggers and saves short event clips +
+                      snapshots.
                     </p>
                   </div>
                   <button

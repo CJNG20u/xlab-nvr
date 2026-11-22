@@ -434,6 +434,7 @@ export function CameraDetailView({
                   detectObjects: !camera.detectObjects,
                 })
               }
+              title="Toggle OCR (On-Camera Recognition)"
               aria-pressed={camera.detectObjects}
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
                 camera.detectObjects
@@ -442,7 +443,7 @@ export function CameraDetailView({
               }`}
             >
               <ScanEye className="w-3 h-3" />
-              AI
+              OCR
             </button>
           </div>
         </div>
@@ -733,7 +734,7 @@ export function CameraDetailView({
                 <p className="text-[11px] text-zinc-500 mt-1">
                   {camera.detectObjects
                     ? 'Hardware ONVIF object clips captured on this date will appear here.'
-                    : 'Enable AI above to capture short object detection clips.'}
+                    : 'Enable OCR above to capture short object detection clips.'}
                 </p>
               </div>
             ) : (

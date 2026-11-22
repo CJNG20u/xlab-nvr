@@ -305,16 +305,17 @@ export function LiveView({
                     muted={isMuted}
                   />
 
-                  {/* Minimalist Top-Right Indicators: 8px red REC dot + tiny emerald/cyan AI badge */}
+                  {/* Minimalist Top-Right Indicators: 8px red REC dot + tiny emerald/cyan OCR badge */}
                   {(cam.recordContinuous || cam.detectObjects || isCapturing) && (
                     <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 pointer-events-none">
                       {cam.detectObjects && (
                         <span
+                          title="OCR (On-Camera Recognition) active"
                           className={`px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-sm border border-emerald-500/40 text-[9px] font-mono font-semibold tracking-wider text-emerald-400 ${
                             isCapturing ? 'animate-pulse border-cyan-400 text-cyan-300' : ''
                           }`}
                         >
-                          AI
+                          OCR
                         </span>
                       )}
                       {cam.recordContinuous && (
@@ -351,7 +352,7 @@ export function LiveView({
                               detectObjects: false,
                             });
                           }}
-                          title="Switch to Live Only (no recording or AI)"
+                          title="Switch to Live Only (no recording or OCR)"
                           aria-pressed={isLiveOnly}
                           className={`px-2 py-1 rounded-md text-[10px] font-medium transition-colors cursor-pointer border ${
                             isLiveOnly
@@ -387,7 +388,7 @@ export function LiveView({
                           REC
                         </button>
 
-                        {/* AI Object Detection Pill */}
+                        {/* OCR (On-Camera Recognition) Pill */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -396,7 +397,7 @@ export function LiveView({
                               detectObjects: !cam.detectObjects,
                             });
                           }}
-                          title="Toggle ONVIF Object Detection Clips"
+                          title="Toggle OCR (On-Camera Recognition)"
                           aria-pressed={cam.detectObjects}
                           className={`px-2 py-1 rounded-md text-[10px] font-medium transition-colors cursor-pointer border ${
                             cam.detectObjects
@@ -404,7 +405,7 @@ export function LiveView({
                               : 'bg-zinc-900/80 border-zinc-800 text-zinc-400 hover:text-zinc-100'
                           }`}
                         >
-                          AI
+                          OCR
                         </button>
 
                         {/* Audio Mute Toggle */}
