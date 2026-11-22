@@ -252,11 +252,7 @@ export function LiveView({
               <div className="w-11 h-11 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-3.5">
                 <Camera className="w-5 h-5 text-zinc-400" />
               </div>
-              <h2 className="text-sm font-semibold text-zinc-100">No cameras configured</h2>
-              <p className="text-xs text-zinc-400 mt-1.5 mb-5 leading-relaxed">
-                Connect a go2rtc stream to begin viewing live feeds, 24/7 continuous NAS
-                recordings, and ONVIF object detections.
-              </p>
+              <h2 className="text-sm font-semibold text-zinc-100 mb-5">No cameras configured</h2>
               <button
                 type="button"
                 onClick={onAddCamera}
