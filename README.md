@@ -1,4 +1,6 @@
 # xlab-nvr
+<img width="424" height="861" alt="image" src="https://github.com/user-attachments/assets/9184ea39-06bb-4864-bbbc-1ff33bea0dda" />
+
 
 A lightweight, self-hosted Network Video Recorder (NVR) and live camera wall built for low-resource home servers, mini PCs, and NAS hosts.
 
