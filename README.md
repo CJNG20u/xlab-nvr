@@ -1,7 +1,14 @@
 # xlab-nvr
 <img width="424" height="861" alt="image" src="https://github.com/user-attachments/assets/9184ea39-06bb-4864-bbbc-1ff33bea0dda" />
 
+## Why Xlab-nvr?
 
+Traditional AI NVRs decode every camera stream 24/7 on the host CPU/GPU just to run frame-by-frame object detection—causing high power draw, thermal spikes, loud fan noise, and heavy disk I/O.
+
+**Xlab-nvr** takes an edge-first, zero-transcode architecture:
+- **Zero-Transcode Recording:** Uses `ffmpeg -c copy` via `go2rtc` to write continuous `.mp4` segments directly to local or NAS storage without decoding video frames on the server.
+- **Hardware Edge AI via ONVIF:** Offloads person/motion detection to your cameras' built-in hardware via ONVIF PullPoint subscriptions—eliminating continuous server-side ML inference loops and CPU spikes.
+- **Whisper-Quiet & Low Footprint:** Runs as a single lightweight Node.js/React container with minimal RAM usage, no `/dev/shm` frame buffers, and drastically reduced NFS/ZFS write churn.
 A lightweight, self-hosted Network Video Recorder (NVR) and live camera wall built for low-resource home servers, mini PCs, and NAS hosts.
 
 **xlab-nvr** pairs a dark, borderless live monitoring interface with [`go2rtc`](https://github.com/AlexxIT/go2rtc) for ultra-low-latency streaming, zero-transcode `ffmpeg` stream-copy recording, and camera-native ONVIF PullPoint AI event detection — all packaged in a single Docker container with local JSON configuration and SQLite indexing.
