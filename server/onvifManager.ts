@@ -23,8 +23,61 @@ import {
 } from './storage.ts';
 
 const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { Cam } = require('onvif') as { Cam: new (opts: Record<string, unknown>, cb: (err?: Error) => void) => any };
+
+type CamConstructor = new (
+  opts: Record<string, unknown>,
+  cb?: (err?: Error) => void
+) => Record<string, unknown>;
+
+let cachedCamConstructor: CamConstructor | null = null;
+
+function extractCamConstructor(mod: unknown): CamConstructor | null {
+  if (!mod || typeof mod !== 'object') return null;
+  const rec = mod as Record<string, unknown>;
+  if (typeof rec.Cam === 'function') {
+    return rec.Cam as CamConstructor;
+  }
+  const def = rec.default as Record<string, unknown> | undefined;
+  if (def && typeof def.Cam === 'function') {
+    return def.Cam as CamConstructor;
+  }
+  return null;
+}
+
+async function resolveCamConstructor(): Promise<CamConstructor> {
+  if (cachedCamConstructor) return cachedCamConstructor;
+
+  // Prefer onvif/compatibility (onvif v1.x) then root onvif (onvif v0.x) across CJS & ESM
+  const specifiers = ['onvif/compatibility', 'onvif'];
+
+  for (const specifier of specifiers) {
+    try {
+      const mod = require(specifier);
+      const ctor = extractCamConstructor(mod);
+      if (ctor) {
+        cachedCamConstructor = ctor;
+        return ctor;
+      }
+    } catch {
+      // try next resolution path
+    }
+  }
+
+  for (const specifier of specifiers) {
+    try {
+      const mod = await import(specifier);
+      const ctor = extractCamConstructor(mod);
+      if (ctor) {
+        cachedCamConstructor = ctor;
+        return ctor;
+      }
+    } catch {
+      // try next resolution path
+    }
+  }
+
+  throw new Error('Unable to resolve ONVIF Cam constructor from installed onvif package');
+}
 
 interface OnvifListenerState {
   cameraId: string;
@@ -306,37 +359,43 @@ export async function handleDetectionTrigger(
   }
 }
 
-function connectOnvifCam(camera: CameraConfig): Promise<Record<string, unknown>> {
+async function connectOnvifCam(camera: CameraConfig): Promise<Record<string, unknown>> {
+  const CamCtor = await resolveCamConstructor();
   return new Promise((resolve, reject) => {
-    const cam = new Cam(
-      {
-        hostname: camera.onvifHost,
-        username: camera.onvifUser || undefined,
-        password: camera.onvifPass || undefined,
-        port: camera.onvifPort || 80,
-        timeout: 10_000,
-      },
-      (err?: Error) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(cam);
+    let cam: Record<string, unknown>;
+    try {
+      cam = new CamCtor(
+        {
+          hostname: camera.onvifHost,
+          username: camera.onvifUser || undefined,
+          password: camera.onvifPass || undefined,
+          port: camera.onvifPort || 80,
+          timeout: 10_000,
+        },
+        (err?: Error) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(cam);
+          }
         }
-      }
-    );
+      );
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error(String(err)));
+    }
   });
 }
 
 function createPullPointSubscription(cam: Record<string, unknown>): Promise<void> {
   return new Promise((resolve, reject) => {
     const fn = cam.createPullPointSubscription as
-      | ((opts: Record<string, unknown>, cb: (err?: Error) => void) => void)
+      | ((cb: (err?: Error) => void) => void)
       | undefined;
     if (typeof fn !== 'function') {
       reject(new Error('Camera ONVIF client does not support CreatePullPointSubscription'));
       return;
     }
-    fn.call(cam, { initialTerminationTime: 'PT10M' }, (err?: Error) => {
+    fn.call(cam, (err?: Error) => {
       if (err) reject(err);
       else resolve();
     });
