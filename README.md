@@ -46,7 +46,7 @@ A lightweight, self-hosted Network Video Recorder (NVR) and live camera wall bui
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/xlab-nvr.git
+git clone https://github.com/CJNG20u/xlab-nvr.git
 cd xlab-nvr
 ```
 
