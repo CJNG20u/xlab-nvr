@@ -3,7 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: xlab-nvr:latest
+    # Prebuilt image is pulled first; `docker compose up -d --build` builds from source instead
+    image: ghcr.io/cjng20u/xlab-nvr:latest
     container_name: xlab-nvr
     restart: unless-stopped
     ports:

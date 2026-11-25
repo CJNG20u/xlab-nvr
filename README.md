@@ -1,4 +1,6 @@
 # xlab-nvr
+
+[![Docker image](https://github.com/CJNG20u/xlab-nvr/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/CJNG20u/xlab-nvr/pkgs/container/xlab-nvr)
 <img width="424" height="861" alt="image" src="https://github.com/user-attachments/assets/9184ea39-06bb-4864-bbbc-1ff33bea0dda" />
 
 ## Why Xlab-nvr?
@@ -79,6 +81,31 @@ docker compose up -d --build
 ```
 
 Open **`http://<host-ip>:8085`** in your browser.
+
+### Prefer not to build? Use the prebuilt image
+
+A ready-made image is published to GitHub Container Registry on every push to `main`. Save this as `docker-compose.yml` in an empty folder:
+
+```yaml
+services:
+  xlab-nvr:
+    image: ghcr.io/cjng20u/xlab-nvr:latest
+    container_name: xlab-nvr
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - ./recordings:/app/recordings   # or your NAS mount, e.g. /mnt/nas-nvr:/app/recordings
+      - ./data:/data
+```
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Images are built automatically for `linux/amd64` and `linux/arm64`. `:latest` follows `main`; each release also gets version tags (e.g. `:1.1.0`, `:1`) so you can pin a version. The repo's own `docker-compose.yml` also pulls this image first and only builds from source when you pass `--build`.
 
 ---
 
