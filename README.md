@@ -1,6 +1,12 @@
 # xlab-nvr
 
 [![Docker image](https://github.com/CJNG20u/xlab-nvr/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/CJNG20u/xlab-nvr/pkgs/container/xlab-nvr)
+
+🐳 **Docker image:** `ghcr.io/cjng20u/xlab-nvr:latest` (amd64 + arm64)
+
+```bash
+docker pull ghcr.io/cjng20u/xlab-nvr:latest
+```
 <img width="424" height="861" alt="image" src="https://github.com/user-attachments/assets/9184ea39-06bb-4864-bbbc-1ff33bea0dda" />
 
 ## Why Xlab-nvr?
