@@ -1,4 +1,15 @@
-# xlab-nvr
+<h1 align="center">xlab-nvr</h1>
+
+<p align="center">
+  <img src="public/icon.svg" width="128" alt="xlab-nvr logo">
+</p>
+
+<p align="center"><b>A quiet home camera recorder for small servers.</b></p>
+
+<p align="center"><a href="#quick-start--installation">Install</a> · <a href="#key-features">Features</a> · <a href="#connecting-go2rtc--importing-cameras">go2rtc setup</a> · <a href="#storage-layout">Storage</a></p>
+
+xlab-nvr records your cameras without eating your CPU. It copies the video straight to disk and lets the cameras themselves spot people and motion, so a mini PC or a NAS is plenty. Live wall, 24/7 recording and a timeline you can scrub, all in one Docker container.
+
 
 [![Docker image](https://github.com/CJNG20u/xlab-nvr/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/CJNG20u/xlab-nvr/pkgs/container/xlab-nvr)
 
