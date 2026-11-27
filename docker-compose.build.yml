@@ -1,0 +1,7 @@
+# Build from source instead of pulling the prebuilt image:
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+services:
+  xlab-nvr:
+    build:
+      context: .
+      dockerfile: Dockerfile

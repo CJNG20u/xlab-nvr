@@ -6,7 +6,7 @@
 
 <p align="center"><b>A quiet home camera recorder for small servers.</b></p>
 
-<p align="center"><a href="#quick-start--installation">Install</a> · <a href="#key-features">Features</a> · <a href="#connecting-go2rtc--importing-cameras">go2rtc setup</a> · <a href="#storage-layout">Storage</a></p>
+<p align="center"><a href="#install">Install</a> · <a href="#key-features">Features</a> · <a href="#connecting-go2rtc--importing-cameras">go2rtc setup</a> · <a href="#storage-layout">Storage</a></p>
 
 Lightweight, self-hosted NVR web app & PWA with secure login, a Frigate-inspired dark UI, go2rtc low-latency streaming, 24/7 NAS segment recording, and ONVIF object-detection clip capture
 
@@ -48,82 +48,43 @@ A lightweight, self-hosted Network Video Recorder (NVR) and live camera wall bui
 
 ---
 
-## Quick Start & Installation
-
 ### Prerequisites
 
 - Docker & Docker Compose v2
 - A running [`go2rtc`](https://github.com/AlexxIT/go2rtc) instance reachable from the xlab-nvr container
 
-### 1. Clone the Repository
+## Install
+
+Every xlab app installs and updates the same way: one folder, one `docker-compose.yml`, one `.env`, your data in `./data` and recordings in `./recordings`.
+
+```bash
+mkdir -p /opt/xlab-nvr && cd /opt/xlab-nvr
+curl -fsSLO https://raw.githubusercontent.com/CJNG20u/xlab-nvr/main/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/CJNG20u/xlab-nvr/main/.env.example -o .env
+docker compose up -d
+```
+
+Open `http://<host-ip>:8085`. On first visit you create the admin account (see [Login & Security](#login--security)).
+
+In `docker-compose.yml`, set `TZ` to your time zone (for example `America/Los_Angeles`) so daily folders and timeline timestamps line up, and replace `./recordings:/app/recordings` with your NAS mount if you have one (for example `/mnt/nas-nvr:/app/recordings`). Settings in `.env` (such as `NVR_ADMIN_USER` / `NVR_ADMIN_PASSWORD` or `TRUST_PROXY`) are optional.
+
+## Update
+
+```bash
+cd /opt/xlab-nvr
+docker compose pull && docker compose up -d
+```
+
+Images are built automatically for `linux/amd64` and `linux/arm64`. `:latest` follows `main`; every release also gets version tags (for example `:1.1.0`, `:1`), so you can pin one with `image: ghcr.io/cjng20u/xlab-nvr:1.1.0`.
+
+## Build from source
 
 ```bash
 git clone https://github.com/CJNG20u/xlab-nvr.git
 cd xlab-nvr
+cp .env.example .env
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 ```
-
-### 2. Configure Storage Volumes (`docker-compose.yml`)
-
-By default, `docker-compose.yml` stores configuration/SQLite in `./data` and recordings in `./recordings`:
-
-```yaml
-services:
-  xlab-nvr:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: xlab-nvr:latest
-    container_name: xlab-nvr
-    restart: unless-stopped
-    ports:
-      - "8085:8080"
-    environment:
-      - NODE_ENV=production
-      - PORT=8080
-      - TZ=America/New_York
-      - DATA_DIR=/data
-      - RECORDINGS_DIR=/app/recordings
-    volumes:
-      # Local storage (or replace ./recordings with a NAS mount like /mnt/nas-nvr)
-      - ./recordings:/app/recordings
-      - ./data:/data
-```
-
-- **Time Zone**: Update `TZ` to match your local time zone (for example, `America/Los_Angeles` or `Europe/London`) so daily folders and timeline timestamps align with local time.
-- **NAS Storage**: Replace `./recordings:/app/recordings` with your mounted NFS/SMB share path (for example, `/mnt/nas-nvr:/app/recordings`).
-
-### 3. Build & Start xlab-nvr
-
-```bash
-docker compose up -d --build
-```
-
-Open **`http://<host-ip>:8085`** in your browser.
-
-### Prefer not to build? Use the prebuilt image
-
-A ready-made image is published to GitHub Container Registry on every push to `main`. Save this as `docker-compose.yml` in an empty folder:
-
-```yaml
-services:
-  xlab-nvr:
-    image: ghcr.io/cjng20u/xlab-nvr:latest
-    container_name: xlab-nvr
-    restart: unless-stopped
-    ports:
-      - "8085:8080"
-    environment:
-      - TZ=America/New_York
-    volumes:
-      - ./recordings:/app/recordings   # or your NAS mount, e.g. /mnt/nas-nvr:/app/recordings
-      - ./data:/data
-```
-
-```bash
-docker compose pull && docker compose up -d
-```
-
-Images are built automatically for `linux/amd64` and `linux/arm64`. `:latest` follows `main`; each release also gets version tags (e.g. `:1.1.0`, `:1`) so you can pin a version. The repo's own `docker-compose.yml` also pulls this image first and only builds from source when you pass `--build`.
 
 ---
 
