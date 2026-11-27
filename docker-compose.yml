@@ -15,6 +15,11 @@ services:
       - TZ=America/New_York
       - DATA_DIR=/data
       - RECORDINGS_DIR=/app/recordings
+      # Login: create the admin account here, or leave these out and use the first-run screen.
+      # - NVR_ADMIN_USER=admin
+      # - NVR_ADMIN_PASSWORD=choose-a-long-password
+      # Behind one reverse proxy (Caddy / Cloudflare Tunnel)? Uncomment so rate limiting sees real IPs:
+      # - TRUST_PROXY=1
     volumes:
       # Local storage (or replace ./recordings with a NAS mount like /mnt/nas-nvr)
       - ./recordings:/app/recordings

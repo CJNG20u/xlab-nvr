@@ -14,6 +14,15 @@ import {
   getSegmentsForDate,
   queryClips,
 } from './server/db.ts';
+import {
+  authGate,
+  authorizeUpgrade,
+  isAuthDisabled,
+  originGuard,
+  registerAuthRoutes,
+  securityHeaders,
+  seedAccountFromEnv,
+} from './server/auth.ts';
 import { nvrEvents, type NvrEventPayload } from './server/eventBus.ts';
 import { exportContinuousRange } from './server/exporter.ts';
 import { attachGo2RtcWsProxy, handleGo2RtcHttpProxy } from './server/go2rtcProxy.ts';
@@ -136,13 +145,31 @@ async function startServer() {
   const app = express();
   const server = http.createServer(app);
 
+  // Client IP for login rate limiting. Behind a reverse proxy set TRUST_PROXY=1 (number of proxy hops).
+  const trustProxy = process.env.TRUST_PROXY;
+  if (trustProxy) {
+    app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy === 'true' ? true : trustProxy);
+  }
+  app.disable('x-powered-by');
+
+  // --- Authentication (login screen, session cookies) ---
+  await seedAccountFromEnv();
+  if (isAuthDisabled()) {
+    console.warn('[auth] NVR_AUTH_DISABLED=true: the NVR is running WITHOUT a login. Only use this behind another access layer.');
+  }
+  app.use(securityHeaders);
+  app.use(originGuard);
+  app.use(authGate); // protects /api, /recordings and /go2rtc (login page assets stay public)
+
   // Proxy /go2rtc/* HTTP requests BEFORE body parsers so raw bodies/streams pass through untouched
   app.use('/go2rtc', handleGo2RtcHttpProxy);
 
-  // Attach WebSocket upgrade proxy for /go2rtc/* (MSE / WebRTC)
-  attachGo2RtcWsProxy(server);
+  // Attach WebSocket upgrade proxy for /go2rtc/* (MSE / WebRTC), requires a valid session
+  attachGo2RtcWsProxy(server, authorizeUpgrade);
 
   app.use(express.json({ limit: '1mb' }));
+
+  registerAuthRoutes(app);
 
   // Serve /recordings statically with full HTTP Range (206 Partial Content) support and path confinement
   app.use('/recordings', (req: Request, res: Response, next: NextFunction) => {
@@ -163,10 +190,10 @@ async function startServer() {
       setHeaders: (res, filePath) => {
         if (filePath.endsWith('.mp4')) {
           res.setHeader('Content-Type', 'video/mp4');
-          res.setHeader('Cache-Control', 'public, max-age=3600');
+          res.setHeader('Cache-Control', 'private, max-age=3600');
         } else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
           res.setHeader('Content-Type', 'image/jpeg');
-          res.setHeader('Cache-Control', 'public, max-age=86400');
+          res.setHeader('Cache-Control', 'private, max-age=86400');
         }
       },
     })

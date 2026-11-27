@@ -28,6 +28,7 @@ import {
   testCameraConnectionApi,
   updateCamera,
 } from '../lib/api';
+import { SecuritySection } from './SecuritySection';
 import { XlabLogo } from './XlabLogo';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
@@ -561,6 +562,9 @@ export function SettingsView({
               </form>
             )}
           </section>
+
+          {/* Login / account security */}
+          <SecuritySection />
 
           {/* About xlab-nvr Section */}
           <section className="rounded-xl bg-[#121214] border border-zinc-800 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

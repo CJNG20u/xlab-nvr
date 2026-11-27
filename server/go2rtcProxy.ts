@@ -36,6 +36,7 @@ export function handleGo2RtcHttpProxy(req: Request, res: Response): void {
   delete headers.host;
   delete headers.connection;
   delete headers['content-length'];
+  delete headers.cookie; // never forward the NVR session cookie to go2rtc
 
   const proxyReq = client.request(
     {
@@ -74,10 +75,19 @@ export function handleGo2RtcHttpProxy(req: Request, res: Response): void {
   }
 }
 
-export function attachGo2RtcWsProxy(server: http.Server): void {
+export function attachGo2RtcWsProxy(
+  server: http.Server,
+  isAuthorized: (req: IncomingMessage) => boolean = () => true
+): void {
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const reqUrl = req.url || '';
     if (!reqUrl.startsWith('/go2rtc/')) {
+      return;
+    }
+
+    if (!isAuthorized(req)) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\nContent-Length: 0\r\n\r\n');
+      socket.destroy();
       return;
     }
 

@@ -14,6 +14,19 @@ import type {
   TestConnectionResult,
 } from '../types';
 
+export const AUTH_REQUIRED_EVENT = 'xlab-auth-required';
+
+/** A protected request returned 401: tell the app shell to show the login screen again. */
+function notifyIfAuthRequired(status: number, data: unknown): void {
+  if (
+    status === 401 &&
+    typeof window !== 'undefined' &&
+    (data as { code?: string } | null)?.code === 'AUTH_REQUIRED'
+  ) {
+    window.dispatchEvent(new Event(AUTH_REQUIRED_EVENT));
+  }
+}
+
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
@@ -23,6 +36,7 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
     },
   });
   const data = await res.json().catch(() => ({}));
+  notifyIfAuthRequired(res.status, data);
   if (!res.ok) {
     throw new Error(
       typeof data?.error === 'string' ? data.error : `Request failed (${res.status})`
@@ -157,6 +171,7 @@ export async function downloadExportClip(params: {
 
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
+    notifyIfAuthRequired(res.status, errData);
     throw new Error(
       typeof errData?.error === 'string' ? errData.error : `Export failed (${res.status})`
     );
@@ -204,4 +219,53 @@ export function subscribeNvrEvents(
   return () => {
     source.close();
   };
+}
+
+export interface AuthStatus {
+  authEnabled: boolean;
+  setupRequired: boolean;
+  authenticated: boolean;
+  username: string | null;
+  minPasswordLength: number;
+}
+
+export function fetchAuthStatus(): Promise<AuthStatus> {
+  return requestJson<AuthStatus>('/api/auth/status');
+}
+
+export function loginRequest(username: string, password: string): Promise<AuthStatus> {
+  return requestJson<AuthStatus>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export function setupAccountRequest(username: string, password: string): Promise<AuthStatus> {
+  return requestJson<AuthStatus>('/api/auth/setup', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+}
+
+export function logoutRequest(): Promise<{ ok: boolean }> {
+  return requestJson<{ ok: boolean }>('/api/auth/logout', { method: 'POST' });
+}
+
+export function logoutAllRequest(): Promise<{ ok: boolean; revoked: number }> {
+  return requestJson<{ ok: boolean; revoked: number }>('/api/auth/logout-all', {
+    method: 'POST',
+  });
+}
+
+export function changePasswordRequest(
+  currentPassword: string,
+  newPassword: string
+): Promise<{ ok: boolean; otherSessionsSignedOut: number }> {
+  return requestJson<{ ok: boolean; otherSessionsSignedOut: number }>(
+    '/api/auth/change-password',
+    {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }
+  );
 }

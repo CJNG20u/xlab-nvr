@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { AuthGate } from './components/AuthGate.tsx';
 import './index.css';
 import { initPWAInstallListener } from './hooks/usePWAInstall.ts';
 
@@ -15,4 +16,8 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  <AuthGate>
+    <App />
+  </AuthGate>
+);

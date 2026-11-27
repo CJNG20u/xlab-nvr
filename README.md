@@ -43,6 +43,7 @@ A lightweight, self-hosted Network Video Recorder (NVR) and live camera wall bui
 - **Unified Timeline Scrubbing & Multi-Camera Review**: Scrub across a 24-hour timeline per camera or across all cameras simultaneously, filter by detection label, adjust playback speed (`1x`–`8x`), and export lossless trimmed `.mp4` clips.
 - **One-Click `go2rtc` Stream Import**: Automatically discovers streams from `<go2rtcUrl>/api/streams`, extracts RTSP hostnames and credentials to pre-fill ONVIF settings, and creates cameras in *Live Only* mode.
 - **Configurable Retention Cleanup**: Background hourly pruning removes expired continuous segments and detection clips from both disk and SQLite automatically.
+- **Built-in Login**: A sign-in screen protects the web app, live streams and recordings. Passwords are hashed, sessions can be revoked, and failed logins are rate limited.
 - **Installable Mobile & Desktop PWA**: Standalone home-screen support for Android, iOS/iPadOS, and desktop browsers with safe-area notch handling and a streaming-safe service worker.
 
 ---
@@ -164,6 +165,31 @@ Click **Import from go2rtc** next to the **go2rtc HTTP URL** field (or inside th
 
 ---
 
+## Login & Security
+
+The first time you open xlab-nvr it asks you to create an admin account (username + a password of at least 10 characters). After that, every page, live stream and recording needs a sign-in. You stay signed in for 30 days on each device, and you can change your password or sign out everywhere under **Settings → Security**.
+
+**Open it right after you start the container.** Until the account exists, whoever reaches the page first can create it. To skip that, set the account up from the compose file instead:
+
+```yaml
+environment:
+  - NVR_ADMIN_USER=admin
+  - NVR_ADMIN_PASSWORD=choose-a-long-password   # only used when no account exists yet
+```
+
+| Variable | What it does |
+| --- | --- |
+| `NVR_ADMIN_USER` / `NVR_ADMIN_PASSWORD` | Creates the admin account on first start. Ignored once an account exists. |
+| `TRUST_PROXY` | Set to `1` when xlab-nvr sits behind one reverse proxy (Caddy, nginx, Cloudflare Tunnel) so login rate limiting sees each visitor's real IP. |
+| `NVR_ALLOWED_ORIGINS` | Only needed if your proxy rewrites the `Host` header and sign-in is rejected as cross-origin. Comma-separated hostnames, e.g. `nvr.example.com`. |
+| `NVR_AUTH_DISABLED` | `true` turns the login off. Only use it behind another access layer such as mTLS or a VPN. |
+
+**Forgot your password?** Stop the container, delete `data/auth.json`, and start it again. xlab-nvr will ask you to create a new account. Your cameras and recordings are not touched.
+
+Login protects access, but it doesn't encrypt traffic. For use outside your home network, put xlab-nvr behind HTTPS (see below).
+
+---
+
 ## Optional Reverse Proxy (Caddy + HTTPS for PWA)
 
 Installing xlab-nvr as a mobile/desktop PWA requires HTTPS (or `localhost`). When placing xlab-nvr behind **Caddy**, enable `flush_interval -1` so real-time Server-Sent Events (`/api/events/stream`) and WebSocket MSE live streams pass through without buffering:
@@ -175,6 +201,8 @@ nvr.example.com {
     }
 }
 ```
+
+If you use a reverse proxy, also set `TRUST_PROXY=1` (see [Login & Security](#login--security)).
 
 Once served over HTTPS, open **Settings → Install App (PWA)** to install xlab-nvr directly to Android, iOS/iPadOS, or desktop.
 
