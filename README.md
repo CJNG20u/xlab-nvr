@@ -8,7 +8,7 @@
 
 <p align="center"><a href="#quick-start--installation">Install</a> · <a href="#key-features">Features</a> · <a href="#connecting-go2rtc--importing-cameras">go2rtc setup</a> · <a href="#storage-layout">Storage</a></p>
 
-xlab-nvr records your cameras without eating your CPU. It copies the video straight to disk and lets the cameras themselves spot people and motion, so a mini PC or a NAS is plenty. Live wall, 24/7 recording and a timeline you can scrub, all in one Docker container.
+Lightweight, self-hosted NVR web app & PWA with secure login, a Frigate-inspired dark UI, go2rtc low-latency streaming, 24/7 NAS segment recording, and ONVIF object-detection clip capture
 
 
 [![Docker image](https://github.com/CJNG20u/xlab-nvr/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/CJNG20u/xlab-nvr/pkgs/container/xlab-nvr)
