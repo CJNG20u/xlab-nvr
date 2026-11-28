@@ -55,7 +55,7 @@ A lightweight, self-hosted Network Video Recorder (NVR) and live camera wall bui
 
 ## Install
 
-Every xlab app installs and updates the same way: one folder, one `docker-compose.yml`, one `.env`, your data in `./data` and recordings in `./recordings`.
+Every xlab app installs and updates the same way: one folder, one `docker-compose.yml`, one `.env`, your data in `./data` and recordings in `./recordings` (or your NAS, via `RECORDINGS_PATH` in `.env`).
 
 ```bash
 mkdir -p /opt/xlab-nvr && cd /opt/xlab-nvr
@@ -66,7 +66,7 @@ docker compose up -d
 
 Open `http://<host-ip>:8085`. On first visit you create the admin account (see [Login & Security](#login--security)).
 
-In `docker-compose.yml`, set `TZ` to your time zone (for example `America/Los_Angeles`) so daily folders and timeline timestamps line up, and replace `./recordings:/app/recordings` with your NAS mount if you have one (for example `/mnt/nas-nvr:/app/recordings`). Settings in `.env` (such as `NVR_ADMIN_USER` / `NVR_ADMIN_PASSWORD` or `TRUST_PROXY`) are optional.
+In `docker-compose.yml`, set `TZ` to your time zone (for example `America/Los_Angeles`) so daily folders and timeline timestamps line up, and set `RECORDINGS_PATH` in `.env` to your NAS mount if you have one (for example `RECORDINGS_PATH=/mnt/nas-nvr`). Keeping it in `.env` means `git pull` never resets it. Continuous recording from several cameras fills a small local disk within days. Settings in `.env` (such as `NVR_ADMIN_USER` / `NVR_ADMIN_PASSWORD` or `TRUST_PROXY`) are optional.
 
 ## Update
 

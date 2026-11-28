@@ -17,6 +17,7 @@ services:
       # Behind one reverse proxy (Caddy / Cloudflare Tunnel)? Uncomment so rate limiting sees real IPs:
       # - TRUST_PROXY=1
     volumes:
-      # Local storage (or replace ./recordings with a NAS mount like /mnt/nas-nvr)
-      - ./recordings:/app/recordings
+      # Where recordings are stored on the host. Set RECORDINGS_PATH in .env
+      # (e.g. RECORDINGS_PATH=/mnt/nas-nvr for a NAS); defaults to ./recordings.
+      - ${RECORDINGS_PATH:-./recordings}:/app/recordings
       - ./data:/data
